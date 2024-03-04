@@ -60,15 +60,34 @@ def create_heroes():
     # ensures that data is saved in a single batch. either all succeed or all fail
     with Session(engine) as session:
         team_preventers = Team(name='Preventers', headquarters="Sharp Tower")
-        team_z_force = Team(name='Z-Force', headquarters="Sister Margaret’s Bar")
-        session.add(team_preventers)
-        session.add(team_z_force)
-        session.commit()
+        team_z_force = Team(name='Z-Force', headquarters="Sister Margaret’s Bar")į
+        # Relationship attributes helps in not committing twice
+        #session.add(team_preventers)
+        #session.add(team_z_force)
+        #session.commit()
+
+        # if not using relationship attributes, have to manually add the foreign key id
+        # with relationships attributes, it can automatically infer that
+        # here instead of passing the team_id, we are passing the entire team object
+        # teams will be automatically created in the database and the id will be automatically assigned
+        hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson", team=team_z_force)
+        hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador", team=team_preventers)
+
+        # we could also create heroes first and then teams later when using Relationship attributes
+        hero_3 = Hero(name="Black Lion", secret_name="Trevor Challa", age=35)
+        hero_4 = Hero(name="Princess Sure-E", secret_name="Sure-E", age=25)
+        team_wakanda = Team(name='Wakanda', headquarters="Wakanda", heroes=[hero_3, hero_4])
+
+        # can also add data on the many side
+        hero_5 = Hero(name="Rusty-Man", secret_name="Tommy Sharp", age=48)
+        # behaves like a list but special list,
+        # when we modify it, SQLAlchemy keeps track of necessary changes to be done in the database
+        team_wakanda.heroes.append(hero_5)
 
         # does automatic refresh as we are referring to team_z_force.id
-        hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson", team_id=team_z_force.id)
-        hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador", team_id=team_preventers.id)
-        hero_3 = Hero(name="Rusty-Man", secret_name="Tommy Sharp", age=48)
+        # hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson", team_id=team_z_force.id)
+        # hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador", team_id=team_preventers.id)
+        # hero_3 = Hero(name="Rusty-Man", secret_name="Tommy Sharp", age=48)
         # hero_4 = Hero(name="Tarantula", secret_name="Natalia Roman-on", age=32)
         # hero_5 = Hero(name="Black Lion", secret_name="Trevor Challa", age=35)
         # hero_6 = Hero(name="Dr. Weird", secret_name="Steve Weird", age=36)
@@ -77,7 +96,8 @@ def create_heroes():
         # holding in memory all the objects that should be saved in the database later
         session.add(hero_1)
         session.add(hero_2)
-        session.add(hero_3)
+        session.add(team_wakanda)
+        # session.add(hero_3)
         # session.add(hero_4)
         # session.add(hero_5)
         # session.add(hero_6)
