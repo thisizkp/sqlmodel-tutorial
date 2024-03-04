@@ -61,6 +61,7 @@ class Hero(HeroBase, table=True):
     # Why doesn't primary key doesn't have index=True?
     #       database always creates an internal index for primary keys automatically
     id: Optional[int] = Field(default=None, primary_key=True)
+    hashed_password: str = Field()
 
     # How to define a foreign key?
     #      foreign_key="team.id" tells db that this column is a foreign key to the table team
@@ -71,7 +72,7 @@ class Hero(HeroBase, table=True):
 
 
 class HeroCreate(HeroBase):
-    pass
+    password: str
 
 
 class HeroRead(HeroBase):
@@ -82,6 +83,7 @@ class HeroUpdate(SQLModel):
     name: Optional[str] = None
     secret_name: Optional[str] = None
     age: Optional[int] = None
+    password: Optional[str] = None
 
 
 sqlite_file_name = "database.db"
@@ -248,14 +250,19 @@ app = FastAPI()
 def on_startup():
     create_db_and_tables()
 
+def hash_password(password: str) -> str:
+    return f"hashed {password}"
+
 # response_model to tell FastAPI the schema of the data we want to send back
 # response_model also validates all the data that we promised is there and will remove any extra data
 @app.post("/heroes", response_model=HeroRead)
 def create_hero(hero: HeroCreate):
+    hashed_password = hash_password(hero.password)
     with Session(engine) as session:
+        extra_data = {"hashed_password": hashed_password}
         # reads data from another object with attributes and
         # creates a new instance of this class (Hero)
-        db_hero = Hero.model_validate(hero)
+        db_hero = Hero.model_validate(hero, update=extra_data)
         session.add(hero)
         session.commit()
         session.refresh(hero)
@@ -285,10 +292,15 @@ def update_hero(hero_id: int, hero: HeroUpdate):
         # get Python dictionary from JSON using model_dump
         # pass exclude_unset=True to only include the values that are sent by the client
         hero_data = hero.model_dump(exclude_unset=True)
+        extra_data = {}
+        if "password" in hero_data:
+            password = hero_data["password"]
+            hashed_password = hash_password(password)
+            extra_data["hashed_password"] = hashed_password
         # sqlmodel_update takes an argument with another model object or dictionary
         # for each of the fields in the original, checks if field is available in the argument
         # and then updates it with the provided value
-        db_hero.sqlmodel_update(hero_data)
+        db_hero.sqlmodel_update(hero_data, update=extra_data)
         session.add(db_hero)
         session.commit()
         session.refresh(db_hero)
