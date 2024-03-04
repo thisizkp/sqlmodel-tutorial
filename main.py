@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from sqlmodel import Relationship, SQLModel, Field, Session, create_engine, select, col
 
 
@@ -255,11 +255,19 @@ def create_hero(hero: HeroCreate):
         session.refresh(hero)
         return hero
 
-@app.get("/heroes", response_model=List[Hero])
+@app.get("/heroes", response_model=List[HeroRead])
 def read_heroes():
     with Session(engine) as session:
         heroes = session.exec(select(Hero)).all()
         return heroes
+
+@app.get("/heroes/{hero_id}", response_model=HeroRead)
+def read_hero(hero_id: int):
+    with Session(engine) as session:
+        hero = session.get(Hero, hero_id)
+        if not hero:
+            raise HTTPException(status_code=404, detail="Hero not found")
+        return hero
 
 # Why __name__ == "__main__"?
 #       code that is executed when called with `python app.py`
