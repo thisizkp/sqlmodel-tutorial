@@ -231,7 +231,8 @@ app = FastAPI()
 def on_startup():
     create_db_and_tables()
 
-@app.post("/heroes")
+# response_model to tell FastAPI the schema of the data we want to send back
+@app.post("/heroes", response_model=Hero)
 def create_hero(hero: Hero):
     with Session(engine) as session:
         session.add(hero)
@@ -239,7 +240,7 @@ def create_hero(hero: Hero):
         session.refresh(hero)
         return hero
 
-@app.get("/heroes")
+@app.get("/heroes", response_model=List[Hero])
 def read_heroes():
     with Session(engine) as session:
         heroes = session.exec(select(Hero)).all()
