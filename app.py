@@ -118,10 +118,35 @@ def update_heroes():
         print("Updated hero:", hero)
 
 
+def delete_heroes():
+    with Session(engine) as session:
+        statement = select(Hero).where(Hero.name == "Spider-Boy")
+        results = session.exec(statement)
+        hero = results.one()
+        print("Hero to delete:", hero)
+
+        session.delete(hero)
+        session.commit()
+
+        # session.refresh raises an exception as there's no data in the database
+        # object is not connected to the session, so not marked as "expired"
+        # session doesn't care about the object anymore, so object is still present in memory
+        print("Deleted hero:", hero)
+
+        # confirm if deleted?
+        statement = select(Hero).where(Hero.name == "Spider-Boy")
+        results = session.exec(statement)
+        hero = results.first()
+
+        if hero is None:
+            print("There's no hero named Spider-Boy")
+
+
 def main():
     create_db_and_tables()
     create_heroes()
     update_heroes()
+    delete_heroes()
 
 # purpose of __name__ == "__main__"
 # is to have some code that is executed when called with `python app.py`
