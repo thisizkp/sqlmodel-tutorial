@@ -48,27 +48,34 @@ def create_db_and_tables():
 
 
 def create_heroes():
-    hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson")
-    hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador")
-    hero_3 = Hero(name="Rusty-Man", secret_name="Tommy Sharp", age=48)
-    hero_4 = Hero(name="Tarantula", secret_name="Natalia Roman-on", age=32)
-    hero_5 = Hero(name="Black Lion", secret_name="Trevor Challa", age=35)
-    hero_6 = Hero(name="Dr. Weird", secret_name="Steve Weird", age=36)
-    hero_7 = Hero(name="Captain North America", secret_name="Esteban Rogelios", age=93)
-
     # create a new session for each group of operations with the database that belong together
     # a single session per request
     # will create a new transaction and execute all the SQL code in that transaction
     # ensures that data is saved in a single batch. either all succeed or all fail
     with Session(engine) as session:
+        team_preventers = Team(name='Preventers', headquarters="Sharp Tower")
+        team_z_force = Team(name='Z-Force', headquarters="Sister Margaret’s Bar")
+        session.add(team_preventers)
+        session.add(team_z_force)
+        session.commit()
+
+        # does automatic refresh as we are referring to team_z_force.id
+        hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson", team_id=team_z_force.id)
+        hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador", team_id=team_preventers.id)
+        hero_3 = Hero(name="Rusty-Man", secret_name="Tommy Sharp", age=48)
+        # hero_4 = Hero(name="Tarantula", secret_name="Natalia Roman-on", age=32)
+        # hero_5 = Hero(name="Black Lion", secret_name="Trevor Challa", age=35)
+        # hero_6 = Hero(name="Dr. Weird", secret_name="Steve Weird", age=36)
+        # hero_7 = Hero(name="Captain North America", secret_name="Esteban Rogelios", age=93)
+
         # holding in memory all the objects that should be saved in the database later
         session.add(hero_1)
         session.add(hero_2)
         session.add(hero_3)
-        session.add(hero_4)
-        session.add(hero_5)
-        session.add(hero_6)
-        session.add(hero_7)
+        # session.add(hero_4)
+        # session.add(hero_5)
+        # session.add(hero_6)
+        # session.add(hero_7)
 
 
         # on commit, session will use the engine underneath to save all the data
@@ -89,7 +96,8 @@ def create_heroes():
         print("Hero 1 Name:", hero_1.name)
 
         # explicitly refresh the data from the database
-        # session.refresh(hero_1)
+        session.refresh(hero_2)
+        print("Hero 2 Team:", hero_2.team_id)
 
     # once done with the session, close it to release the resources and finish any cleanup
     # used when manually creating a session instead of using `with`
