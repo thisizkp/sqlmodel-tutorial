@@ -1,6 +1,11 @@
-from typing import Optional
+from typing import List, Optional
 
 from sqlmodel import Relationship, SQLModel, Field, Session, create_engine, select, col
+
+
+class HeroTeamLink(SQLModel, table=True):
+    team_id: Optional[int] = Field(default=None, foreign_key="team.id", primary_key=True)
+    hero_id: Optional[int] = Field(default=None, foreign_key="hero.id", primary_key=True)
 
 
 class Team(SQLModel, table=True):
@@ -17,7 +22,8 @@ class Team(SQLModel, table=True):
     # trick: always refers to the current model class you are editing.
     # not using back_populates will lead to inconsistencies before commit when dealing with python objects
     # python doesn't know of any class Hero, so a string "Hero". But the editor & SQLModel is aware of that
-    heroes: list["Hero"] = Relationship(back_populates="team")
+    # link_model allows us to define Many-to-Many relationships
+    heroes: list["Hero"] = Relationship(back_populates="teams", link_model=HeroTeamLink)
 
 
 class Hero(SQLModel, table=True):
@@ -38,8 +44,8 @@ class Hero(SQLModel, table=True):
 
     # could be NULL (or None in python)
     # foreign_key="team.id" tells db that this column is a foreign key to the table team
-    team_id: Optional[int] = Field(default=None, foreign_key="team.id")
-    team: Optional[Team] = Relationship(back_populates="heroes")
+    # team_id: Optional[int] = Field(default=None, foreign_key="team.id")
+    teams: List[Team] = Relationship(back_populates="heroes", link_model=HeroTeamLink)
 
 
 sqlite_file_name = "database.db"
@@ -76,8 +82,8 @@ def create_heroes():
         # with relationships attributes, it can automatically infer that
         # here instead of passing the team_id, we are passing the entire team object
         # teams will be automatically created in the database and the id will be automatically assigned
-        hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson", team=team_z_force)
-        hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador", team=team_preventers)
+        hero_1 = Hero(name="Deadpond", secret_name="Dive Wilson", teams=[team_z_force])
+        hero_2 = Hero(name="Spider-Boy", secret_name="Pedro Parqueador", teams=[team_preventers])
 
         # we could also create heroes first and then teams later when using Relationship attributes
         hero_3 = Hero(name="Black Lion", secret_name="Trevor Challa", age=35)
