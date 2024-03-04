@@ -19,6 +19,7 @@ class Team(SQLModel, table=True):
     #       instead the value is the entire object that is related
     #       team.heroes = will give the list of heroes (Hero instances)
     #       handled by SQLAlchemy and can be present only in table models and not data models
+    #       data models can only have which attributes to get data from and which data to get from them
     #
     # `back_populates` - if something changes in this model, it should change that attribute in the other model
     #       refers to - name of the attribute in the other model that will reference the current model
@@ -50,6 +51,8 @@ class HeroBase(SQLModel):
     #       age is not required when validating data and it has a default value of None.
     #       translates to `NULL` in the database.
     age: Optional[int] = Field(default=None, index=True)
+
+    # team_id: Optional[int] = Field(default=None, foreign_key="team.id")
 
 
 class Hero(HeroBase, table=True):
@@ -86,6 +89,13 @@ class HeroUpdate(SQLModel):
     age: Optional[int] = None
     password: Optional[str] = None
 
+
+# class HeroReadWithTeam(HeroRead):
+#     team: Optional[TeamRead] = None
+
+
+# class TeamReadWithHeroes(TeamRead):
+#     heroes: List[HeroRead] = []
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
