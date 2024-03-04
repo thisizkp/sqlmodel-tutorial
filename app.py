@@ -99,7 +99,7 @@ def select_heroes():
         # but the editor doesn't know that, to fix that, use `col` function
         # `col` function tells editor that class attribute is SQLModel column
         # instead of instance with a value
-        heroes = session.exec(select(Hero).where(col(Hero.age) < 35)).all()
+        heroes = session.exec(select(Hero).where(col(Hero.age) < 35).offset(2).limit(3)).all()
         print(heroes)
 
 
