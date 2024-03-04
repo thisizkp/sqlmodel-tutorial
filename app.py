@@ -11,6 +11,12 @@ class Team(SQLModel, table=True):
     # don't represent a column in the database
     # value is the actual entire object that is related
     # team.heroes = will give the list of heroes (Hero instances)
+    # back_populates = if something changes in this model,
+    # it should change that attribute in the other model
+    # name of the attribute in the other model that will reference the current model
+    # trick: always refers to the current model class you are editing.
+    # not using back_populates will lead to inconsistencies before commit when dealing with python objects
+    # python doesn't know of any class Hero, so a string "Hero". But the editor & SQLModel is aware of that
     heroes: list["Hero"] = Relationship(back_populates="team")
 
 
