@@ -103,10 +103,25 @@ def select_heroes():
         print(heroes)
 
 
+def update_heroes():
+    with Session(engine) as session:
+        statement = select(Hero).where(Hero.name == "Spider-Boy")
+        results = session.exec(statement)
+        # check if there is a single result
+        hero = results.one()
+        print("Hero:", hero)
+
+        hero.age = 16
+        session.add(hero)
+        session.commit()
+        session.refresh(hero)
+        print("Updated hero:", hero)
+
+
 def main():
     create_db_and_tables()
     create_heroes()
-    select_heroes()
+    update_heroes()
 
 # purpose of __name__ == "__main__"
 # is to have some code that is executed when called with `python app.py`
