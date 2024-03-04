@@ -78,6 +78,12 @@ class HeroRead(HeroBase):
     id: int
 
 
+class HeroUpdate(SQLModel):
+    name: Optional[str] = None
+    secret_name: Optional[str] = None
+    age: Optional[int] = None
+
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
@@ -269,6 +275,24 @@ def read_hero(hero_id: int):
         if not hero:
             raise HTTPException(status_code=404, detail="Hero not found")
         return hero
+
+@app.patch("/heroes/{hero_id}", response_model=HeroRead)
+def update_hero(hero_id: int, hero: HeroUpdate):
+    with Session(engine) as session:
+        db_hero = session.get(Hero, hero_id)
+        if not db_hero:
+            raise HTTPException(status_code=404, detail="Hero not found")
+        # get Python dictionary from JSON using model_dump
+        # pass exclude_unset=True to only include the values that are sent by the client
+        hero_data = hero.model_dump(exclude_unset=True)
+        # sqlmodel_update takes an argument with another model object or dictionary
+        # for each of the fields in the original, checks if field is available in the argument
+        # and then updates it with the provided value
+        db_hero.sqlmodel_update(hero_data)
+        session.add(db_hero)
+        session.commit()
+        session.refresh(db_hero)
+        return db_hero
 
 # Why __name__ == "__main__"?
 #       code that is executed when called with `python app.py`
