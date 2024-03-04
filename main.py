@@ -67,6 +67,21 @@ class Hero(SQLModel, table=True):
     teams: List[Team] = Relationship(back_populates="heroes", link_model=HeroTeamLink)
 
 
+# doesn't have table=True, creates only Pydantic models but not table
+# can be used for API request and response types
+class HeroCreate(SQLModel):
+    name: str
+    secret_name: str
+    age: Optional[int] = None
+
+
+class HeroRead(SQLModel):
+    id: int
+    name: str
+    secret_name: str
+    age: Optional[int] = None
+
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
@@ -232,9 +247,13 @@ def on_startup():
     create_db_and_tables()
 
 # response_model to tell FastAPI the schema of the data we want to send back
-@app.post("/heroes", response_model=Hero)
-def create_hero(hero: Hero):
+# response_model also validates all the data that we promised is there and will remove any extra data
+@app.post("/heroes", response_model=HeroRead)
+def create_hero(hero: HeroCreate):
     with Session(engine) as session:
+        # reads data from another object with attributes and
+        # creates a new instance of this class (Hero)
+        db_hero = Hero.model_validate(hero)
         session.add(hero)
         session.commit()
         session.refresh(hero)
