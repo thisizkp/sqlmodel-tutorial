@@ -69,16 +69,17 @@ class Hero(SQLModel, table=True):
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-# Engine
-#       have a single engine object for the entire application and reuse it.
-#       echo=True prints all the SQL statements that are executed.
-#       engine is responsible for communicating with the database, handling the connections..etc
-engine = create_engine(sqlite_url, echo=True)
+# configuration that SQLAlchemy passes to the low-level library in charge of communicating to the db
+connect_args = {"check_same_thread": False}
+
+# have a single engine object for the entire application and reuse it.
+# echo=True prints all the SQL statements that are executed.
+# engine is responsible for communicating with the database, handling the connections..etc
+engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
 
 
-# Avoid Side Effects
-#       if this was not in a separate function,
-#       it would create database and tables every time we import this module as a side effect
+# if this was not in a separate function,
+# it would create database and tables every time we import this module as a side effect
 def create_db_and_tables():
     # create the database and all the tables registered in the MetaData object
     # has to be called after the code that creates new model classes inherting from SQLModel
