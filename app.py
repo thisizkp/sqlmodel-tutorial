@@ -118,8 +118,21 @@ def select_heroes():
         # but the editor doesn't know that, to fix that, use `col` function
         # `col` function tells editor that class attribute is SQLModel column
         # instead of instance with a value
-        heroes = session.exec(select(Hero).where(col(Hero.age) < 35).offset(2).limit(3)).all()
-        print(heroes)
+        #heroes = session.exec(select(Hero).where(col(Hero.age) < 35).offset(2).limit(3)).all()
+        #print(heroes)
+
+        # get data from tables hero & team.
+        # don't want all possible combinations of hero and team
+        # but give me only the ones where hero.team_id == team.id
+        # statement = select(Hero, Team).where(Hero.team_id == Team.id)
+
+        # already knows what the foreign key is, so no need to pass `ON` part
+        # isouter=True to make the JOIN be LEFT OUTER JOIN
+        # select(A,B) tells that we want to select columns from both A and B
+        statement = select(Hero, Team).join(Team, isouter=True)
+        results = session.exec(statement)
+        for hero, team in results:
+            print("Hero:", hero, "Team:", team)
 
 
 def update_heroes():
