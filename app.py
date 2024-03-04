@@ -53,6 +53,22 @@ def create_heroes():
         # by sending the appropriate SQL to the database
         session.commit()
 
+        print("After committing the session")
+        # will print empty
+        # because SQLAlchemy internally marks the object as expired as it doesn't have the latest version of data
+        # SQLAlchemy has no way of knowing that we want to access the object data
+        print("Hero 1:", hero_1)
+
+        # by accessing the attribute, refresh the data from the database (Go to the database)
+        print("Hero 1 ID:", hero_1.id)
+
+        # session already refreshed the data and knows they are not expired (no commits in between)
+        # so doesn't have to go to the database for names
+        print("Hero 1 Name:", hero_1.name)
+
+        # explicitly refresh the data from the database
+        # session.refresh(hero_1)
+
     # once done with the session, close it to release the resources and finish any cleanup
     # used when manually creating a session instead of using `with`
     # session.close()
