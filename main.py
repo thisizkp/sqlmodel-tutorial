@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from sqlmodel import Relationship, SQLModel, Field, Session, create_engine, select, col
 
 
@@ -255,8 +255,9 @@ def create_hero(hero: HeroCreate):
         session.refresh(hero)
         return hero
 
+# Prevent users from setting a higher limit by adding additional validation
 @app.get("/heroes", response_model=List[HeroRead])
-def read_heroes():
+def read_heroes(offset: int = 0, limit: int = Query(default=100, le=100)):
     with Session(engine) as session:
         heroes = session.exec(select(Hero)).all()
         return heroes
