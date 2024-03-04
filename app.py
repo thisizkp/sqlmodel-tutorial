@@ -9,7 +9,9 @@ class Hero(SQLModel, table=True):
     # it will always require passing that `None` value while doing data validation.
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    name: str
+    # database always creates an internal index for primary keys automatically
+    # use index to improve reading performance at the cost of writing performance & additional storage
+    name: str = Field(index=True)
     secret_name: str
 
     # age is not required when validating data and it has a default value of None.
