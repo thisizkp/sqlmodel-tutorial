@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from fastapi import FastAPI
 from sqlmodel import Relationship, SQLModel, Field, Session, create_engine, select, col
 
 
@@ -70,6 +71,8 @@ sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 # configuration that SQLAlchemy passes to the low-level library in charge of communicating to the db
+# we need to make sure we don't share the same session in more than one request
+# FastAPI each request could be handled by multiple interacting threads, so need to disable it.
 connect_args = {"check_same_thread": False}
 
 # have a single engine object for the entire application and reuse it.
@@ -221,17 +224,30 @@ def delete_heroes():
         if hero is None:
             print("There's no hero named Spider-Boy")
 
+app = FastAPI()
 
-def main():
+# called only on startup
+@app.on_event("startup")
+def on_startup():
     create_db_and_tables()
-    create_heroes()
-    #select_heroes()
-    #update_heroes()
-    #delete_heroes()
+
+@app.post("/heroes")
+def create_hero(hero: Hero):
+    with Session(engine) as session:
+        session.add(hero)
+        session.commit()
+        session.refresh(hero)
+        return hero
+
+@app.get("/heroes")
+def read_heroes():
+    with Session(engine) as session:
+        heroes = session.exec(select(Hero)).all()
+        return heroes
 
 # Why __name__ == "__main__"?
 #       code that is executed when called with `python app.py`
 #       __name__ is set to main when called from a terminal
 #       but not called when another file imports it like `from app import something`
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#    main()
