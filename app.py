@@ -1,12 +1,17 @@
 from typing import Optional
 
-from sqlmodel import SQLModel, Field, Session, create_engine, select, col
+from sqlmodel import Relationship, SQLModel, Field, Session, create_engine, select, col
 
 
 class Team(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     headquarters: str
+
+    # don't represent a column in the database
+    # value is the actual entire object that is related
+    # team.heroes = will give the list of heroes (Hero instances)
+    heroes: list["Hero"] = Relationship(back_populates="team")
 
 
 class Hero(SQLModel, table=True):
@@ -28,6 +33,7 @@ class Hero(SQLModel, table=True):
     # could be NULL (or None in python)
     # foreign_key="team.id" tells db that this column is a foreign key to the table team
     team_id: Optional[int] = Field(default=None, foreign_key="team.id")
+    team: Optional[Team] = Relationship(back_populates="heroes")
 
 
 sqlite_file_name = "database.db"
