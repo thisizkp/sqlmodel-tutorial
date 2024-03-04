@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from sqlmodel import Relationship, SQLModel, Field, Session, create_engine, select, col
 
 
@@ -18,6 +18,7 @@ class Team(SQLModel, table=True):
     # `Relationship` doesn't represent a column in the database
     #       instead the value is the entire object that is related
     #       team.heroes = will give the list of heroes (Hero instances)
+    #       handled by SQLAlchemy and can be present only in table models and not data models
     #
     # `back_populates` - if something changes in this model, it should change that attribute in the other model
     #       refers to - name of the attribute in the other model that will reference the current model
@@ -37,7 +38,7 @@ class Team(SQLModel, table=True):
     #       allows us to define Many-to-Many relationships using a through model
     heroes: list["Hero"] = Relationship(back_populates="teams", link_model=HeroTeamLink)
 
-# Data model only, but still allows us to create index
+# Data model only, but still allows us to create index & foreign key..etc
 # won't affect this model, but any model that inherits from this model & has `table=True`
 class HeroBase(SQLModel):
     # Why use an Index?
@@ -250,33 +251,41 @@ app = FastAPI()
 def on_startup():
     create_db_and_tables()
 
+def get_session():
+    with Session(engine) as session:
+        yield session
+
 def hash_password(password: str) -> str:
     return f"hashed {password}"
 
 # response_model to tell FastAPI the schema of the data we want to send back
 # response_model also validates all the data that we promised is there and will remove any extra data
+# passing a param hero that has no default value after a param that has a default value,
+# python would complain about that. We can use initial parameter, * to mark all rest of the parameters as keyword only
+# value of dependency will be used for one request.
+# if the dependency has yield, it will continue the rest of the execution after sending the response
+# in this case, it will finish the cleanup code from with block, closing the session..etc.
 @app.post("/heroes", response_model=HeroRead)
-def create_hero(hero: HeroCreate):
+def create_hero(*, session: Session = Depends(get_session), hero: HeroCreate):
     hashed_password = hash_password(hero.password)
-    with Session(engine) as session:
-        extra_data = {"hashed_password": hashed_password}
-        # reads data from another object with attributes and
-        # creates a new instance of this class (Hero)
-        db_hero = Hero.model_validate(hero, update=extra_data)
-        session.add(hero)
-        session.commit()
-        session.refresh(hero)
-        return hero
+    extra_data = {"hashed_password": hashed_password}
+    # reads data from another object with attributes and
+    # creates a new instance of this class (Hero)
+    db_hero = Hero.model_validate(hero, update=extra_data)
+    session.add(hero)
+    session.commit()
+    session.refresh(hero)
+    return hero
 
 # Prevent users from setting a higher limit by adding additional validation
 @app.get("/heroes", response_model=List[HeroRead])
-def read_heroes(offset: int = 0, limit: int = Query(default=100, le=100)):
+def read_heroes(*, session: Session = Depends(get_session), offset: int = 0, limit: int = Query(default=100, le=100)):
     with Session(engine) as session:
         heroes = session.exec(select(Hero)).all()
         return heroes
 
 @app.get("/heroes/{hero_id}", response_model=HeroRead)
-def read_hero(hero_id: int):
+def read_hero(*, session: Session = Depends(get_session), hero_id: int):
     with Session(engine) as session:
         hero = session.get(Hero, hero_id)
         if not hero:
@@ -284,7 +293,7 @@ def read_hero(hero_id: int):
         return hero
 
 @app.patch("/heroes/{hero_id}", response_model=HeroRead)
-def update_hero(hero_id: int, hero: HeroUpdate):
+def update_hero(*, session: Session = Depends(get_session), hero_id: int, hero: HeroUpdate):
     with Session(engine) as session:
         db_hero = session.get(Hero, hero_id)
         if not db_hero:
@@ -307,7 +316,7 @@ def update_hero(hero_id: int, hero: HeroUpdate):
         return db_hero
 
 @app.delete("/heroes/{hero_id}")
-def delete_hero(hero_id: int):
+def delete_hero(*, session: Session = Depends(get_session), hero_id: int):
     with Session(engine) as session:
         hero = session.get(Hero, hero_id)
         if not hero:
@@ -315,6 +324,7 @@ def delete_hero(hero_id: int):
         session.delete(hero)
         session.commit()
         return {"ok": True}
+
 
 # Why __name__ == "__main__"?
 #       code that is executed when called with `python app.py`
